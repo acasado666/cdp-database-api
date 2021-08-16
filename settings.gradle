@@ -14,5 +14,4 @@ include ':cdp-tigergraph-api'
 gradle.ext.springBootProjects = [
         ':cdp-tigergraph-api'
 ]
-include 'cdp-tigergraph-api'
 
