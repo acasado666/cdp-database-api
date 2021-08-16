@@ -1,30 +1,225 @@
 plugins {
-    id 'org.springframework.boot' version '2.5.3'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'java'
+    id 'base'
+    id 'idea'
+    id 'org.sonarqube' version '3.3'
+    id 'com.google.cloud.tools.jib' version '3.0.0' apply false
+    id 'org.springframework.boot' version '2.5.3' apply false
+}
+allprojects {
+    group 'de.id.cdp'
+    version = System.getenv('CI_COMMIT_REF_NAME') ? System.getenv('CI_COMMIT_REF_NAME') : "${getCurrentGitBranch()}-${getHostName()}"
 }
 
-group = 'com.example'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+    apply plugin: 'io.spring.dependency-management'
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of('15')
+            vendor = JvmVendorSpec.ADOPTOPENJDK
+        }
+    }
+
+    repositories {
+        mavenCentral()
+        maven { url 'https://packages.confluent.io/maven/' }
+        maven { url 'https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-dependencies'}
+        maven { url 'https://repo.spring.io/libs-snapshot-local' }
+        maven { url 'https://repo.spring.io/libs-milestone-local'}
+    }
+
+
+    /*dependencyManagement {
+        imports {
+            mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2020.0.2'
+        }
+    }*/
+
+    configurations.all {
+        dependencies {
+            annotationProcessor 'org.projectlombok:lombok'
+            implementation 'org.projectlombok:lombok'
+            // https://stackoverflow.com/questions/53326271/spring-nullable-annotation-generates-unknown-enum-constant-warning
+            implementation 'com.google.code.findbugs:jsr305:3.0.2'
+        }
+
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'junit', module: 'junit'
+        exclude group: "org.junit.vintage", module: "junit-vintage-engine"
+
+        exclude group: 'org.slf4j', module: 'slf4j-simple'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+        exclude group: 'junit', module: 'junit'
+        exclude group: "org.junit.vintage", module: "junit-vintage-engine"
+
+//        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+//            def lombokVersion = dependencyManagement.importedProperties['lombok.version'] ?: '1.18.20'
+//            if (details.requested.name == 'lombok') {
+//                details.useTarget group: 'org.projectlombok', name: 'lombok', version: lombokVersion
+//                details.because "prefer 'org.projectlombok' managed version over any version of 'lombok'"
+//            }
+//            def slf4jVersion = dependencyManagement.importedProperties['slf4j.version'] ?: '1.7.30'
+//            if (details.requested.name == 'slf4j-api') {
+//                details.useTarget group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+//                details.because "prefer 'slf4j-api' managed version over any version of 'slf4j-api'"
+//            }
+//            if (details.requested.name == 'log4j') {
+//                details.useTarget group: 'org.slf4j', name: 'log4j-over-slf4j', version: slf4jVersion
+//                details.because "prefer 'log4j-over-slf4j' managed version over any version of 'log4j'"
+//            }
+//            if (details.requested.name == 'commons-logging') {
+//                details.useTarget group: 'org.slf4j', name: 'jcl-over-slf4j', version: slf4jVersion
+//                details.because "prefer 'jcl-over-slf4j' managed version over any version of 'commons-logging'"
+//            }
+//            // Be careful when migrating the Avro version. Take care about the the Commerce Hub Gradle plugin,
+//            // Spring Kafka, Apache Kafka client libs, Confluent Kafka libs and the state on the broker.
+//            def avroVersion = '1.9.2'
+//            if (details.requested.name == 'avro') {
+//                details.useTarget group: 'org.apache.avro', name: 'avro', version: avroVersion
+//                details.because "prefer 'avro' version ${avroVersion} over any version of 'avro'"
+//            }
+//            def confluentVersion = '6.0.2'
+//            if (details.requested.name == 'kafka-avro-serializer') {
+//                details.useTarget group: 'io.confluent', name: 'kafka-avro-serializer', version: confluentVersion
+//                details.because "prefer 'kafka-avro-serializer' version ${confluentVersion} over any version of 'kafka-avro-serializer'"
+//            }
+//            if (details.requested.name == 'kafka-streams-avro-serde') {
+//                details.useTarget group: 'io.confluent', name: 'kafka-streams-avro-serde', version: confluentVersion
+//                details.because "prefer 'kafka-streams-avro-serde' version ${confluentVersion} over any version of 'kafka-streams-avro-serde'"
+//            }
+//        }
+
+
+    }
+
+    test {
+        useJUnitPlatform()
+
+        testLogging {
+            showStandardStreams true
+            showStackTraces true
+        }
+
+        doFirst {
+            systemProperty 'spring.profiles.active', 'test'
+        }
+
+        finalizedBy jacocoTestReport
+    }
+
+    jacocoTestReport {
+        reports {
+            html.enabled false
+            xml.enabled true
+            csv.enabled false
+        }
+    }
+
+    check.dependsOn(jacocoTestReport)
+
+    boolean isSpringProject = gradle.springBootProjects.contains(it.path)
+
+    if (isSpringProject) {
+        apply plugin: 'org.springframework.boot'
+        apply plugin: 'com.google.cloud.tools.jib'
+
+        dependencies {
+            annotationProcessor 'org.projectlombok:lombok'
+            annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+            implementation 'ch.qos.logback:logback-classic'
+            implementation 'org.projectlombok:lombok'
+            implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.5.8'
+
+            testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+            testImplementation 'org.junit.jupiter:junit-jupiter-api'
+            testImplementation 'org.assertj:assertj-core'
+            testImplementation 'org.mockito:mockito-core'
+            testImplementation 'org.mockito:mockito-junit-jupiter'
+        }
+
+        compileJava.dependsOn(processResources)
+
+        jib {
+            // credentials should be set from outside like e.g.
+            // 'gradle jib -Djib.to.auth.username=$DOCKER_USER -Djib.to.auth.password=$DOCKER_USER_PASSWORD'
+            from {
+                image = 'openjdk:15.0.2-jdk-slim'
+            }
+            to {
+                image = "ippendigital/${rootProject.name}_${project.name}:${project.version}"
+            }
+            container {
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                // DANGER - ZONE -- DANGER - ZONE -- DANGER - ZONE -- DANGER - ZONE -- DANGER - ZONE - DANGER - ZONE //
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                // https://www.youtube.com/watch?v=cyL6fd2OU0s ////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                // Java chooses the JVM garbage collector by available resources.
+                // If we have 1 CPU we will end with the SerialGC in favor of the ParallelGC.
+                // If we have more memory we will end with G1 Garbage collector (which is desired)
+                // This has huge impact while scaling your pod with Kubernetes.
+                // https://dzone.com/articles/pitfalls-in-jvm-and-docker-defaults
+                // Setting the Heap insight the container to 70% of all available memory.
+                // This memory will be divided into heap and non heap and the JVM will automatically select
+                // the appropriate garbage collector and adjust the limits to 70% of all available memory.
+                // You just need to set the resource limits and requests of Kubernetes.
+
+                // https://dzone.com/articles/difference-between-initialrampercentage-minramperc
+                // https://medium.com/adorsys/jvm-memory-settings-in-a-container-environment-64b0840e1d9e
+                // http://trustmeiamadeveloper.com/2016/03/18/where-is-my-memory-java/
+
+                // We use Java String deduplication feature to reduce String memory footprint
+                // https://www.baeldung.com/jvm-parameters
+                jvmFlags = ['-XX:+PrintCommandLineFlags', '-XX:+PrintFlagsFinal',
+                            '-XX:+UseG1GC', '-XX:MaxRAMPercentage=70', '-XX:MaxMetaspaceSize=128m',
+                            '-XX:+UseStringDeduplication', '-XX:+ExitOnOutOfMemoryError'
+                ]
+                creationTime = 'USE_CURRENT_TIMESTAMP'
+            }
+        }
     }
 }
 
-repositories {
-    mavenCentral()
+
+//check {
+//    dependsOn('sonarqube')
+//}
+//
+//sonarqube {
+//    properties {
+//        property 'sonar.host.url', 'https://sonarqube.id-repository.de'
+//        property 'sonar.login', System.getenv('SONAR_TOKEN')
+//        property 'sonar.projectKey', "${project.group}:${project.name}:${project.version}"
+//        property 'sonar.projectName', "${project.name}:${project.version}"
+//    }
+//}
+
+wrapper {
+    gradleVersion = '6.9'
+    distributionType = Wrapper.DistributionType.ALL
 }
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+def static getHostName() {
+    return InetAddress.localHost.hostName
 }
 
-test {
-    useJUnitPlatform()
+def getCurrentGitBranch() {
+    def gitBranch = 'unknown-branch'
+    try {
+        def workingDir = new File("${project.projectDir}")
+        def result = 'git rev-parse --abbrev-ref HEAD'.execute(null, workingDir)
+        result.waitFor()
+        if (result.exitValue() == 0) {
+            gitBranch = result.text.trim()
+        }
+    } catch (e) {
+        logger.error('Unable to fetch current GIT branch', e)
+    }
+    logger.info("Your current GIT branch is {}", gitBranch)
+    return gitBranch
 }

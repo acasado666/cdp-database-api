@@ -1,1 +1,18 @@
-rootProject.name = 'cdp-databse-api'
+pluginManagement {
+    repositories {
+        maven { url 'https://repo.spring.io/release' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'cdp-database-api'
+
+include ':app-commons'
+include ':cdp-tigergraph-api'
+
+gradle.ext.springBootProjects = [
+        ':cdp-tigergraph-api'
+]
+include 'cdp-tigergraph-api'
+
