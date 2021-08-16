@@ -1,6 +1,6 @@
-package analitics.client;
+package de.cdp.bi.client;
 
-import de.cdp.tg.analitics.config.ApplicationConfig;
+import de.cdp.bi.config.ApplicationConfig;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

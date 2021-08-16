@@ -1,4 +1,4 @@
-package analitics.model;
+package de.cdp.bi.model;
 
 import com.fasterxml.jackson.annotation.*;
 

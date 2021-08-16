@@ -1,4 +1,4 @@
-package analitics;
+package de.cdp.bi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
