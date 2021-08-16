@@ -1,4 +1,4 @@
-package analitics.config;
+package de.cdp.bi.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;

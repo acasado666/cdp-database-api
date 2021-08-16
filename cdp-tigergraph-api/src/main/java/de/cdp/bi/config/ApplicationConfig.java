@@ -1,4 +1,4 @@
-package analitics.config;
+package de.cdp.bi.config;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package analitics.config;
+package de.cdp.bi.config;
 
 import org.apache.commons.io.output.TeeOutputStream;
 import org.slf4j.Logger;
