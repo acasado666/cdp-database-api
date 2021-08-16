@@ -1,0 +1,65 @@
+server:
+  port: 8080
+
+## -------------------------------------------------------------------------------------------------
+## Spring related configurations
+## -------------------------------------------------------------------------------------------------
+spring:
+  application:
+    name: cdp-tigergraph-api
+  jackson:
+    date-format: "dd-MM-yyyy hh:mm:ss"
+    serialization:
+      INDENT_OUTPUT: true
+      FAIL_ON_EMPTY_BEANS: false
+      WRITE_DATES_AS_TIMESTAMPS: false
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false
+      FAIL_ON_IGNORED_PROPERTIES: false
+
+## -------------------------------------------------------------------------------------------------
+## Api related configurations
+## -------------------------------------------------------------------------------------------------
+api:
+  info:
+    title: Tiger Graph Service API
+    description: Tiger Graph Service API
+    version: 1.0.0
+    terms-of-service: http://antonio.com/terms/
+    contact:
+      name: UIWI API Team
+      email: antonio.casado@ippen-digital.de
+      url: http://antonio.casado/team
+    license:
+      name: Apache 2.0
+      url: http://www.apache.org/licenses/LICENSE-2.0.html
+  logging:
+    enable: true
+    url-patterns: "/api/v1/*"
+    requestIdParamName: CORRELATION_ID
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /   # Redirect localhost:8080 to swagger-ui.html
+
+# -------------------------------------------------------------------------------------------------
+# Logging configurations
+# -------------------------------------------------------------------------------------------------
+logging:
+  level:
+    root: INFO
+    com.example.api.client: DEBUG
+  pattern:
+    #console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%8.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %X{REQUEST_ID} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"
+
+# -------------------------------------------------------------------------------------------------
+# Custom  Tigergraph configurations
+# -------------------------------------------------------------------------------------------------
+config:
+  graphDbBaseUrl: https://api-graph.staging.ippen.space/query/
+  graphDbConnectTimeoutMs: 500
+  graphDbReadTimeoutMs: 500
+  cacheTtl: 86400
+  cacheMb: 200
